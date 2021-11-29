@@ -1,0 +1,59 @@
+service: challenge
+
+plugins:
+  - serverless-esbuild
+  - serverless-offline
+  - serverless-dynamodb-local
+
+provider:
+  name: aws
+  runtime: nodejs14.x
+  region: sa-east-1
+
+custom:
+  esbuild:
+    bundle: true
+    minify: false
+    sourcemap: true
+    external:
+      - chrome-aws-lambda
+  dynamodb:
+    stages:
+      - dev
+      - local
+    start:
+      port: 8000
+      inMemory: true
+      migrate: true
+
+functions:
+  createAction:
+    handler: src/functions/createAction.handle
+    events:
+      - http:
+          path: /todos/{user_id}
+          method: POST
+          cors: true
+  getAction:
+    handler: src/functions/getAction.handle
+    events:
+      - http:
+          path: /todos/{user_id}
+          method: GET
+          cors: true
+
+resources:
+  Resources:
+    dbActionsUsers:
+      Type: 'AWS::DynamoDB::Table'      
+      Properties:
+        TableName: user_actions
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
